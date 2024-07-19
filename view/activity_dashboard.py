@@ -12,6 +12,7 @@ from PyQt5.QtCore import QThreadPool, QTimer
 
 from view.logger_widget import LoggerWidget
 from view.activity_plot_widget import ActivityPlotWidget
+from view.activity_summary import ActivitySummary
 
 from workers.worker import Worker
 
@@ -20,7 +21,7 @@ API_ENDPOINT = os.getenv('API_ENDPOINT')
 API_BEARER_TOKEN = os.getenv('API_STATIC_TOKEN')
 
 
-class ActivityMonitorWidget(QWidget):
+class ActivityDashboard(QWidget):
     def __init__(self, side_panel_widget):
         super().__init__()
 
@@ -31,6 +32,12 @@ class ActivityMonitorWidget(QWidget):
         self.online_status_label = side_panel_widget.online_status_label
         self.online = self.online_status_label.online
         self.online_status_label.online_status_updated.connect(self.update_online_status)
+
+        self.key_presses = []
+        self.left_clicks = []
+        self.right_clicks = []
+        self.mouse_movements = []
+        self.timestamps = []
 
         self.init_mnk_listener()
         self.initUI()
@@ -67,11 +74,13 @@ class ActivityMonitorWidget(QWidget):
         self.update_remaining_time_timer.timeout.connect(self.update_remaining_time_label)
         self.update_remaining_time_timer.start()
 
+        self.activity_summary = ActivitySummary()
         self.activity_plot = ActivityPlotWidget()
         self.remaining_time_prefix = "Remaining time until next POST request: "
         self.remaining_time_label = QLabel(self.get_remaining_time_label_text())
         self.log_text_box = LoggerWidget()
 
+        self.layout.addWidget(self.activity_summary)
         self.layout.addWidget(self.activity_plot)
         self.layout.addWidget(self.remaining_time_label)
         self.layout.addWidget(self.log_text_box)
@@ -85,10 +94,18 @@ class ActivityMonitorWidget(QWidget):
 
     def on_move(self, x, y):
         if self.last_mouse_pos is not None:
+            # Calculate distance moved in pixels
             dx = x - self.last_mouse_pos[0]
             dy = y - self.last_mouse_pos[1]
-            self.total_mouse_distance_pixels += math.sqrt(dx * dx + dy * dy)
+            distance_pixels = math.sqrt(dx * dx + dy * dy)
+            
+            # Accumulate total distance in pixels
+            self.total_mouse_distance_pixels += distance_pixels
+            
+            # Convert accumulated distance to meters
             self.total_mouse_distance_meters = (self.total_mouse_distance_pixels / self.dpi_x) * 0.0254
+        
+        # Update last position
         self.last_mouse_pos = (x, y)
 
     def on_press(self, key):
@@ -143,19 +160,32 @@ class ActivityMonitorWidget(QWidget):
         self.threadpool.start(worker)
 
     def post_cycle_complete(self):
-        self.update_plot()
-        self.reset_data()
+        self.update_recorded_data()
+        self.reset_count()
     
-    def update_plot(self):
-        self.activity_plot.key_presses.append(self.key_press_count)
-        self.activity_plot.left_clicks.append(self.left_click_count)
-        self.activity_plot.right_clicks.append(self.right_click_count)
-        self.activity_plot.mouse_movements.append(self.total_mouse_distance_meters)
-        self.activity_plot.timestamps.append(time.time())
+    def update_recorded_data(self):
+        # record data in widget
+        self.key_presses.append(self.key_press_count)
+        self.left_clicks.append(self.left_click_count)
+        self.right_clicks.append(self.right_click_count)
+        self.mouse_movements.append(self.total_mouse_distance_meters)
+        self.timestamps.append(time.time())
 
-        self.activity_plot.update_plot()
+        # update plot widget with new date
+        updated_data = {
+            'activities': {
+                'key-presses': self.key_presses,
+                'left-clicks': self.left_clicks,
+                'right-clicks': self.right_clicks,
+                'mouse-movements': self.mouse_movements
+            },
+            'timestamps': self.timestamps
+        }
 
-    def reset_data(self) -> None:
+        self.activity_plot.set_data(updated_data)
+        self.activity_summary.set_data(updated_data)
+
+    def reset_count(self) -> None:
         self.key_press_count = 0
         self.left_click_count = 0
         self.right_click_count = 0
@@ -183,4 +213,4 @@ class ActivityMonitorWidget(QWidget):
 
     def update_online_status(self, online: bool):
         self.online = online
-        self.log_text_box.logMessage(f"You are now {"ONLINE" if self.online else "OFFLINE"}")
+        self.log_text_box.logMessage(f"You are now {"ONLINE" if self.online else "OFFLINE"}.")

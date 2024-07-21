@@ -1,6 +1,8 @@
-# TODOs
-- handle cases where data may fail to send e.g. due to no internet connection
-    - rework online_status_label to get a response from the API
+## Commands
+- `pipenv shell` to launch virtual environment
+- `exit` to deactivate
+
+## TODOs
 - store+sync offline mode data / data that failed to send
 - persist settings data locally
     - timeout interval
@@ -10,5 +12,8 @@
     - python command options
     - shorter timeout intervals for testing
 - track application time + activity grouping e.g. productivity, entertainment, gaming
+- fix pipenv installation
 
+- [x] rework online status widget
+    - if toggling status to online, GET /ping to get response from API backend
 - [x] add session data summary to dashboard

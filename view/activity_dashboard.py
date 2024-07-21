@@ -27,10 +27,10 @@ class ActivityDashboard(QWidget):
 
         self.timeout_interval_slider = side_panel_widget.timeout_interval_slider
         self.timeout_interval_slider.timeoutIntervalChanged.connect(self.update_timeout_interval)
-        self.timeout_interval = 60000 # Interval at which to send data in minutes
+        self.timeout_interval = 5000 # Interval at which to send data in minutes
 
         self.online_status_label = side_panel_widget.online_status_label
-        self.online = self.online_status_label.online
+        self.is_online = self.online_status_label.is_online
         self.online_status_label.online_status_updated.connect(self.update_online_status)
 
         self.key_presses = []
@@ -112,7 +112,7 @@ class ActivityDashboard(QWidget):
         self.key_press_count += 1
 
     def process_data(self, progress_callback):
-        if self.online:
+        if self.is_online:
             self.post_data(progress_callback)
         else:
             progress_callback.emit("Currently offline. Queuing data for syncing later.")
@@ -211,6 +211,6 @@ class ActivityDashboard(QWidget):
         minutes = (milliseconds // (1000 * 60)) % 60
         return f"{int(minutes):02}:{int(seconds):02}"
 
-    def update_online_status(self, online: bool):
-        self.online = online
-        self.log_text_box.logMessage(f"You are now {"ONLINE" if self.online else "OFFLINE"}.")
+    def update_online_status(self, isOnline: bool):
+        self.is_online = isOnline
+        self.log_text_box.logMessage(f"You are now {"ONLINE" if self.is_online else "OFFLINE"}.")

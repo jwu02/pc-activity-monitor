@@ -1,4 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel
+from PyQt5.QtCore import Qt
+
 import time
 from datetime import datetime
 
@@ -36,18 +38,19 @@ class ActivitySummary(QWidget):
 
         # Add data labels and the corresponding summary/sum under it
         for i, (k, v) in enumerate(self.data['activities'].items()):
-            self.layout.addWidget(QLabel(self.data_text_labels[k]), 1, i)
+            self.layout.addWidget(QLabel(self.data_text_labels[k]), 1, i, alignment=Qt.AlignCenter)
 
             # store reference so we can update it later
             self.summary_labels[k] = QLabel(self.format_summary_text(k, sum(v)))
-            self.summary_labels[k].setStyleSheet("font-weight: bold")
-            self.layout.addWidget(self.summary_labels[k], 2, i)
+            self.summary_labels[k].setStyleSheet("font-weight: 900; font-size: 24px;")
+            self.layout.addWidget(self.summary_labels[k], 2, i, alignment=Qt.AlignCenter)
     
     def set_data(self, data):
         self.data = data
         # update data summary labels
         for k, v in self.data['activities'].items():
             self.summary_labels[k].setText(self.format_summary_text(k, sum(v)))
+            
 
     def format_summary_text(self, key, total_value):
         output_str = ''

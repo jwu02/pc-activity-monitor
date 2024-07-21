@@ -1,7 +1,17 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QPushButton
-from PyQt5.QtCore import Qt, pyqtSignal
-
+from PyQt5.QtCore import Qt, pyqtSignal, QThreadPool
 import qtawesome as qta
+
+from dotenv import load_dotenv
+import json
+import os
+import requests
+
+from workers.worker import Worker
+
+load_dotenv()  # This will load variables from the .env file into environment variables
+API_ENDPOINT = os.getenv('API_ENDPOINT')
+API_BEARER_TOKEN = os.getenv('API_STATIC_TOKEN')
 
 class OnlineStatusLabel(QWidget):
     online_status_updated = pyqtSignal(bool)
@@ -22,16 +32,19 @@ class OnlineStatusLabel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.online = False
+        self.is_online = False
     
         self.initUI()
-        # go online on initialization
-        self.toggle_status()
+
+        self.threadpool = QThreadPool()
+
+        self.online_status_updated.connect(self.updateUI)
+        self.toggle_online_status() # go online on initialization
 
     def initUI(self):
         self.layout = QHBoxLayout(self)
 
-        self.status_label = QLabel(self.STATUS_MAPPING[self.online]["label"], self)
+        self.status_label = QLabel(self.STATUS_MAPPING[self.is_online]["label"], self)
         self.update_status_label_stylesheet()
         # Set the alignment of the text within the QLabel to center
         self.status_label.setAlignment(Qt.AlignCenter)
@@ -43,12 +56,12 @@ class OnlineStatusLabel(QWidget):
         self.disconnect_icon = qta.icon('mdi6.connection')
 
         self.toggle_status_btn = QPushButton(self.connect_icon, None)
-        self.toggle_status_btn.clicked.connect(self.toggle_status)
+        self.toggle_status_btn.clicked.connect(self.toggle_online_status)
         self.toggle_status_btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.toggle_status_btn.adjustSize()
 
         # map the online status to the toggle status button tooltip description
-        toggle_btn_tooltip = self.STATUS_MAPPING[self.online]["tooltip"]
+        toggle_btn_tooltip = self.STATUS_MAPPING[self.is_online]["tooltip"]
         self.toggle_status_btn.setToolTip(toggle_btn_tooltip)
 
         self.layout.addWidget(self.status_label)
@@ -57,23 +70,60 @@ class OnlineStatusLabel(QWidget):
     def update_status_label_stylesheet(self):
         self.status_label_stylesheet = f"""
             color: white;
-            background-color: {self.STATUS_MAPPING[self.online]["color"]};
+            background-color: {self.STATUS_MAPPING[self.is_online]["color"]};
             padding: 4px 10px;
             text-align: center;
             font-weight: bold;
         """
         self.status_label.setStyleSheet(self.status_label_stylesheet)
 
-    def toggle_status(self):
-        self.online = not self.online
+    def toggle_online_status(self):
+        # if status is toggled to online, check server connection
+        if not self.is_online:
+            self.ping_worker()
+        else:
+            self.is_online = False
+        
         self.updateUI()
-        self.online_status_updated.emit(self.online)
+        self.online_status_updated.emit(self.is_online)
 
     def updateUI(self):
-        self.toggle_status_btn.setIcon(self.disconnect_icon if self.online else self.connect_icon)
-        self.status_label.setText(self.STATUS_MAPPING[self.online]["label"])
+        self.toggle_status_btn.setIcon(self.disconnect_icon if self.is_online else self.connect_icon)
+        self.status_label.setText(self.STATUS_MAPPING[self.is_online]["label"])
         
-        tooltip = self.STATUS_MAPPING[self.online]["tooltip"]
+        tooltip = self.STATUS_MAPPING[self.is_online]["tooltip"]
         self.toggle_status_btn.setToolTip(tooltip)
 
         self.update_status_label_stylesheet()
+    
+    def ping_worker(self):
+        self.toggle_status_btn.setEnabled(False)
+
+        # Pass the function to execute
+        worker = Worker(self.ping_api_server) # Any other args, kwargs are passed to the run function
+        worker.signals.result.connect(self.set_online_status)
+        worker.signals.progress.connect(print)
+        worker.signals.finished.connect(self.enable_toggle_btn)
+
+        # Execute
+        self.threadpool.start(worker)
+
+    def enable_toggle_btn(self):
+        self.toggle_status_btn.setEnabled(True)
+
+    def ping_api_server(self, progress_callback):
+        try:
+            response = requests.get(f'http://localhost:8000/ping')
+            if response.status_code == 200:
+                return True
+            else:
+                return False
+        except requests.RequestException as e:
+            print(f"Error pinging server: {e}")
+            return False
+    
+    def set_online_status(self, is_online):
+        self.is_online = is_online
+
+        self.updateUI()
+        self.online_status_updated.emit(self.is_online)

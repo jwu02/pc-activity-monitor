@@ -11,7 +11,7 @@ class LoggerWidget(QWidget):
 
         # Create log display widget
         self.logDisplay = QTextEdit(self)
-        self.logDisplay.setReadOnly(True)  # Make the log display read-only
+        self.logDisplay.setReadOnly(True)
 
         layout.addWidget(self.logDisplay)
 

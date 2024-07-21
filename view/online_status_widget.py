@@ -13,7 +13,7 @@ load_dotenv()  # This will load variables from the .env file into environment va
 API_ENDPOINT = os.getenv('API_ENDPOINT')
 API_BEARER_TOKEN = os.getenv('API_STATIC_TOKEN')
 
-class OnlineStatusLabel(QWidget):
+class OnlineStatusWidget(QWidget):
     online_status_updated = pyqtSignal(bool)
 
     STATUS_MAPPING = {

@@ -19,19 +19,10 @@ class MainWindow(QMainWindow):
         # Create two vertical layouts
         side_panel_widget = SidePanelWidget()
         activity_monitor_widget = ActivityDashboard(side_panel_widget)
+        side_panel_widget.set_sync_data_created_signal(activity_monitor_widget.get_sync_data_created_signal())
 
         # Add the vertical layouts to the horizontal layout
         horizontal_layout.addWidget(side_panel_widget)
         horizontal_layout.addWidget(activity_monitor_widget)
 
-        # self.apply_stylesheet()
         self.show()
-    
-    def apply_stylesheet(self):
-        stylesheet = """
-            QLabel, QPushButton, QTextEdit {
-                font-size: 16px;
-            }
-        """
-
-        self.setStyleSheet(stylesheet)

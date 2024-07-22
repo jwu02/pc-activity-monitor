@@ -226,7 +226,7 @@ class ActivityDashboard(QWidget):
 
     def update_online_status(self, isOnline: bool):
         self.is_online = isOnline
-        self.log_text_box.logMessage(f"You are now {"ONLINE" if self.is_online else "OFFLINE"}.")
+        self.log_text_box.logMessage(f"You are now {'ONLINE' if self.is_online else 'OFFLINE'}.")
 
     def get_sync_data_created_signal(self):
         return self.sync_data_created

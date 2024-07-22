@@ -19,7 +19,7 @@ class LoggerWidget(QWidget):
         self.setLayout(layout)
 
     def logMessage(self, message: str):
-        self.logDisplay.append(f"[{datetime.now().strftime("%H:%M:%S")}] {message}")
+        self.logDisplay.append(f"[{datetime.now().strftime('%H:%M:%S')}] {message}")
         # https://stackoverflow.com/questions/7778726/autoscroll-pyqt-qtextwidget
         # TODO only auto scroll to end if already at end
         self.logDisplay.moveCursor(QTextCursor.End)

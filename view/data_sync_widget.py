@@ -18,7 +18,6 @@ class DataSyncWindow(QWidget):
 
     def initUI(self):
         self.setWindowTitle("Sync Offline Data")
-        self.
         
         layout = QVBoxLayout()
         self.requests_label = QTextEdit("")

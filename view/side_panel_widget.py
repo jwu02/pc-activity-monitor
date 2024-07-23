@@ -20,7 +20,7 @@ class SidePanelWidget(QWidget):
         self.online_status_widget = OnlineStatusWidget(self.signal_emitter.online_status_updated)
         self.timeout_interval_slider = TimeoutIntervalSliderWidget(self.signal_emitter.timeout_interval_changed)
 
-        self.data_sync_window = DataSyncWindow(self.signal_emitter.sync_data_created)
+        self.data_sync_window = DataSyncWindow(self.signal_emitter)
         self.sync_data_btn = QPushButton("Sync Offline Data")
         self.sync_data_btn.clicked.connect(self.data_sync_window.show)
 

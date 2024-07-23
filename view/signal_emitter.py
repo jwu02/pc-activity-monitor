@@ -1,9 +1,10 @@
 from PyQt5.QtCore import pyqtSignal, QObject
 
 class SignalEmitter(QObject):
-    sync_data_created = pyqtSignal(object)
-    timeout_interval_changed = pyqtSignal(int)
     online_status_updated = pyqtSignal(bool)
+    timeout_interval_changed = pyqtSignal(int)
+    sync_data_created = pyqtSignal(object)
+    send_sync_data = pyqtSignal(object)
 
     def __init__(self):
         super().__init__()

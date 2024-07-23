@@ -7,10 +7,15 @@ from PyQt5.QtCore import Qt
 import qtawesome as qta
 
 class DataSyncWindow(QWidget):
-    def __init__(self, sync_data_created_signal):
+    def __init__(self, signal_emitter):
         super().__init__()
 
-        self.sync_data_created_signal = sync_data_created_signal
+        self.signal_emitter = signal_emitter
+
+        self.is_online = False
+        self.signal_emitter.online_status_updated.connect(self.set_online_status)
+
+        self.sync_data_created_signal = self.signal_emitter.sync_data_created
         self.sync_data_created_signal.connect(self.add_sync_data_point)
 
         self.sync_data_queue = queue.Queue()
@@ -48,34 +53,44 @@ class DataSyncWindow(QWidget):
         layout.addWidget(self.offline_data_table)
         self.setLayout(layout)
     
+    def set_online_status(self, is_online):
+        self.is_online = is_online
+
     def add_sync_data_point(self, new_data_point):
         self.sync_data_queue.put(new_data_point)
-        self.update_ui(new_data_point)
+        self.update_ui()
     
-    def update_ui(self, dp):
-        table_row_index = len(self.sync_data_queue.queue)-1
-        
-        # Ensure the row count is sufficient
-        if table_row_index >= self.offline_data_table.rowCount():
-            self.offline_data_table.setRowCount(table_row_index + 1)
-        
-        timestamp = dp.get('key-presses', {}).get('createdAt', '')
+    def update_ui(self):
+        temp_data = list(self.sync_data_queue.queue)
 
-        for col, (key, val_obj) in enumerate(dp.items()):
-            val = round(val_obj['amount'], 2) if key=='mouse-movements' else val_obj['count']
-            cell = QTableWidgetItem(str(val))
-            # Set cell values as read-only
-            cell.setFlags(cell.flags() ^ Qt.ItemIsEditable)
-        
-            self.offline_data_table.setItem(table_row_index, col, cell)
+        self.offline_data_table.setRowCount(len(temp_data))
 
-        timestamp_formatted = datetime.fromisoformat(timestamp).strftime('%Y-%m-%d %H:%M:%S')
-        self.offline_data_table.setItem(table_row_index, 4, QTableWidgetItem(timestamp))
+        for row, data_obj in enumerate(temp_data):
+        
+            timestamp = data_obj.get('key-presses', {}).get('createdAt', '')
+
+            for col, (key, val_obj) in enumerate(data_obj.items()):
+                val = round(val_obj['amount'], 2) if key=='mouse-movements' else val_obj['count']
+                cell = QTableWidgetItem(str(val))
+                cell.setFlags(cell.flags() ^ Qt.ItemIsEditable) # Set cell values to read-only
+            
+                self.offline_data_table.setItem(row, col, cell)
+
+            timestamp_formatted = datetime.fromisoformat(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+            self.offline_data_table.setItem(row, 4, QTableWidgetItem(timestamp))
 
         self.offline_data_table.scrollToBottom()
 
     def sync_all_offline_data(self):
-        pass
+        while not self.sync_data_queue.empty():
+            if self.is_online:
+                data = self.sync_data_queue.get()
+                self.signal_emitter.send_sync_data.emit(data)
+            else:
+                break
+        
+        self.update_ui()
+
     
     def clear_all_offline_data(self):
         self.sync_data_queue = queue.Queue()

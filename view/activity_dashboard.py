@@ -28,11 +28,13 @@ class ActivityDashboard(QWidget):
 
         self.signal_emitter = signal_emitter
 
+        self.is_online = False
+        self.signal_emitter.online_status_updated.connect(self.update_online_status)
+
         self.timeout_interval = 5000 # Interval at which to send data in minutes
         self.signal_emitter.timeout_interval_changed.connect(self.update_timeout_interval)
 
-        self.is_online = False
-        self.signal_emitter.online_status_updated.connect(self.update_online_status)
+        self.signal_emitter.send_sync_data.connect(self.send_data_worker)
 
         self.key_presses = []
         self.left_clicks = []

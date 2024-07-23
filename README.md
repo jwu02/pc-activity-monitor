@@ -3,16 +3,17 @@
 - `exit` to deactivate
 
 ## TODOs
-- store+sync offline mode data / data that failed to send
-- persist settings data locally
+- [] log messages with signals and add more log messages
+- [] persist settings data locally
     - timeout interval
     - go online/offline on startup
     - offline data that needs syncing
-- automatic configuration for development/production environment settings
+- [] automatic configuration for development/production environment settings
     - python command options
     - shorter timeout intervals for testing
-- track application time + activity grouping e.g. productivity, entertainment, gaming
+- [] track application time + activity grouping e.g. productivity, entertainment, gaming
 
+- [x] store+sync offline mode data / data that failed to send
 - [x] fix pipenv installation
     - `imp` removed from python3.12 `https://github.com/BradenM/micropy-cli/issues/575`
     - `pip install pipenv --user`

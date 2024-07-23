@@ -4,12 +4,11 @@ import json
 import math
 import os
 from pynput import mouse, keyboard
-import queue
 import requests
 import time
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
-from PyQt5.QtCore import QThreadPool, QTimer, pyqtSignal
+from PyQt5.QtCore import QThreadPool, QTimer
 
 from view.logger_widget import LoggerWidget
 from view.activity_plot_widget import ActivityPlotWidget
@@ -23,18 +22,16 @@ API_BEARER_TOKEN = os.getenv('API_STATIC_TOKEN')
 
 
 class ActivityDashboard(QWidget):
-    sync_data_created = pyqtSignal(object)
-
-    def __init__(self, side_panel_widget):
+    def __init__(self, signal_emitter):
         super().__init__()
 
-        self.timeout_interval_slider = side_panel_widget.timeout_interval_slider
-        self.timeout_interval_slider.timeoutIntervalChanged.connect(self.update_timeout_interval)
-        self.timeout_interval = 5000 # Interval at which to send data in minutes
+        self.signal_emitter = signal_emitter
 
-        self.online_status_label = side_panel_widget.online_status_widget
-        self.is_online = self.online_status_label.is_online
-        self.online_status_label.online_status_updated.connect(self.update_online_status)
+        self.timeout_interval = 5000 # Interval at which to send data in minutes
+        self.signal_emitter.timeout_interval_changed.connect(self.update_timeout_interval)
+
+        self.is_online = False
+        self.signal_emitter.online_status_updated.connect(self.update_online_status)
 
         self.key_presses = []
         self.left_clicks = []
@@ -69,7 +66,7 @@ class ActivityDashboard(QWidget):
 
         self.send_data_timer = QTimer(self)
         self.send_data_timer.setInterval(self.timeout_interval)
-        self.send_data_timer.timeout.connect(self.send_data_worker)
+        self.send_data_timer.timeout.connect(self.process_data)
         self.send_data_timer.start()
 
         self.update_remaining_time_timer = QTimer(self)
@@ -139,11 +136,7 @@ class ActivityDashboard(QWidget):
         except requests.exceptions.RequestException as e:
             print(f"Error sending data: {e}")
     
-    def send_data_worker(self):
-        def worker_finished():
-            self.update_recorded_data()
-            self.reset_count()
-
+    def process_data(self):
         if not (self.key_press_count==0 and self.left_click_count==0 and 
                 self.right_click_count==0 and self.total_mouse_distance_pixels==0):
 
@@ -155,26 +148,34 @@ class ActivityDashboard(QWidget):
                 'right-clicks': {'count': self.right_click_count, 'createdAt': timestamp},
                 'mouse-movements': {'amount': self.total_mouse_distance_meters, 'createdAt': timestamp}
             }
-        
-            if self.is_online:
-                # Pass the function to execute
-                # Any other args, kwargs are passed to the run function
-                worker = Worker(self.post_data, data)
-                
-                worker.signals.progress.connect(self.log_text_box.logMessage)
-                worker.signals.finished.connect(worker_finished)
-            else:
-                worker = Worker(self.queue_data, data)
-                
-                worker.signals.progress.connect(self.log_text_box.logMessage)
-                worker.signals.result.connect(lambda returned_data: self.sync_data_created.emit(returned_data))
-                worker.signals.finished.connect(worker_finished)
+
+            self.send_data_worker(data)
             
-            # Execute
-            self.threadpool.start(worker)
         else:
             self.log_text_box.logMessage("No activity recorded.")
             self.update_recorded_data()
+    
+    def send_data_worker(self, data):
+        def worker_finished():
+            self.update_recorded_data()
+            self.reset_count()
+
+        if self.is_online:
+            # Pass the function to execute
+            # Any other args, kwargs are passed to the run function
+            worker = Worker(self.post_data, data)
+            
+            worker.signals.progress.connect(self.log_text_box.logMessage)
+            worker.signals.finished.connect(worker_finished)
+        else:
+            worker = Worker(self.queue_data, data)
+            
+            worker.signals.progress.connect(self.log_text_box.logMessage)
+            worker.signals.result.connect(lambda returned_data: self.signal_emitter.sync_data_created.emit(returned_data))
+            worker.signals.finished.connect(worker_finished)
+        
+        # Execute
+        self.threadpool.start(worker)
     
     def update_recorded_data(self):
         # record data in widget
@@ -227,6 +228,3 @@ class ActivityDashboard(QWidget):
     def update_online_status(self, isOnline: bool):
         self.is_online = isOnline
         self.log_text_box.logMessage(f"You are now {'ONLINE' if self.is_online else 'OFFLINE'}.")
-
-    def get_sync_data_created_signal(self):
-        return self.sync_data_created

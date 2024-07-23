@@ -6,28 +6,24 @@ from view.online_status_widget import OnlineStatusWidget
 from view.data_sync_widget import DataSyncWindow
 
 class SidePanelWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-    
+    def __init__(self, signal_emitter):
+        super().__init__()
+
+        self.signal_emitter = signal_emitter
+
         self.initUI()
 
     def initUI(self):
         self.layout = QVBoxLayout(self)
         self.layout.setAlignment(Qt.AlignTop)
 
-        self.online_status_widget = OnlineStatusWidget()
-        self.timeout_interval_slider = TimeoutIntervalSliderWidget()
+        self.online_status_widget = OnlineStatusWidget(self.signal_emitter.online_status_updated)
+        self.timeout_interval_slider = TimeoutIntervalSliderWidget(self.signal_emitter.timeout_interval_changed)
 
-        self.data_sync_window = DataSyncWindow()
+        self.data_sync_window = DataSyncWindow(self.signal_emitter.sync_data_created)
         self.sync_data_btn = QPushButton("Sync Offline Data")
-        self.sync_data_btn.clicked.connect(self.show_sync_data_window)
+        self.sync_data_btn.clicked.connect(self.data_sync_window.show)
 
         self.layout.addWidget(self.online_status_widget)
         self.layout.addWidget(self.timeout_interval_slider)
         self.layout.addWidget(self.sync_data_btn)
-    
-    def show_sync_data_window(self):
-        self.data_sync_window.show()
-
-    def set_sync_data_created_signal(self, signal):
-        self.data_sync_window.set_sync_data_created_signal(signal)

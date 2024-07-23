@@ -1,12 +1,12 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QSlider
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt
 
 class TimeoutIntervalSliderWidget(QWidget):
-    # Define a signal that emits the new interval value
-    timeoutIntervalChanged = pyqtSignal(int)
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self, timeout_interval_changed_signal):
+        super().__init__()
+        
+        # Define a signal that emits the new interval value
+        self.timeout_interval_changed_signal = timeout_interval_changed_signal
     
         self.valid_values = [1, 5, 10, 20, 30]
         self.initUI()
@@ -33,4 +33,4 @@ class TimeoutIntervalSliderWidget(QWidget):
         value = self.valid_values[index]
         self.label.setText(f"Timeout Interval: {value} min")
 
-        self.timeoutIntervalChanged.emit(value)  # Emit the signal with the new interval
+        self.timeout_interval_changed_signal.emit(value)  # Emit the signal with the new interval

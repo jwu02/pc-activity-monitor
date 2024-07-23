@@ -14,7 +14,6 @@ API_ENDPOINT = os.getenv('API_ENDPOINT')
 API_BEARER_TOKEN = os.getenv('API_STATIC_TOKEN')
 
 class OnlineStatusWidget(QWidget):
-    online_status_updated = pyqtSignal(bool)
 
     STATUS_MAPPING = {
         True: {
@@ -29,8 +28,8 @@ class OnlineStatusWidget(QWidget):
         }
     }
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self, online_status_updated_signal):
+        super().__init__()
 
         self.is_online = False
     
@@ -38,7 +37,8 @@ class OnlineStatusWidget(QWidget):
 
         self.threadpool = QThreadPool()
 
-        self.online_status_updated.connect(self.updateUI)
+        self.online_status_updated_signal = online_status_updated_signal
+        self.online_status_updated_signal.connect(self.updateUI)
         self.toggle_online_status() # go online on initialization
 
     def initUI(self):
@@ -85,7 +85,7 @@ class OnlineStatusWidget(QWidget):
             self.is_online = False
         
         self.updateUI()
-        self.online_status_updated.emit(self.is_online)
+        self.online_status_updated_signal.emit(self.is_online)
 
     def updateUI(self):
         self.toggle_status_btn.setIcon(self.disconnect_icon if self.is_online else self.connect_icon)
@@ -126,4 +126,4 @@ class OnlineStatusWidget(QWidget):
         self.is_online = is_online
 
         self.updateUI()
-        self.online_status_updated.emit(self.is_online)
+        self.online_status_updated_signal.emit(self.is_online)

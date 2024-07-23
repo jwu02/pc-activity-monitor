@@ -9,6 +9,7 @@ import time
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PyQt5.QtCore import QThreadPool, QTimer
+from PyQt5.QtGui import QGuiApplication
 
 from view.logger_widget import LoggerWidget
 from view.activity_plot_widget import ActivityPlotWidget
@@ -51,7 +52,7 @@ class ActivityDashboard(QWidget):
         self.right_click_count = 0
         self.key_press_count = 0
         self.total_mouse_distance_pixels = 0
-        self.dpi_x = 96  # Default DPI value, adjust if needed
+        self.screen_dpi = self.get_screen_dpi()
         self.last_mouse_pos = None
         self.total_mouse_distance_meters = 0
 
@@ -60,6 +61,19 @@ class ActivityDashboard(QWidget):
         self.mouse_listener.start()
         self.keyboard_listener = keyboard.Listener(on_press=self.on_press)
         self.keyboard_listener.start()
+
+    def get_screen_dpi(self):
+        dpi = 120  # Default DPI value
+
+        screen = QGuiApplication.primaryScreen()
+        if screen:
+            # Retrieve DPI values
+            dpi = screen.physicalDotsPerInch()
+            print(f"Screen DPI: {dpi}")
+        else:
+            print(f"Unable to get screen DPI. Setting {dpi} as the default value.")
+
+        return dpi
 
     def initUI(self):
         self.layout = QVBoxLayout(self)
@@ -103,7 +117,7 @@ class ActivityDashboard(QWidget):
             self.total_mouse_distance_pixels += distance_pixels
             
             # Convert accumulated distance to meters
-            self.total_mouse_distance_meters = (self.total_mouse_distance_pixels / self.dpi_x) * 0.0254
+            self.total_mouse_distance_meters = (self.total_mouse_distance_pixels / self.screen_dpi) * 0.0254
         
         # Update last position
         self.last_mouse_pos = (x, y)

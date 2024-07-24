@@ -50,9 +50,12 @@ class ActivityDashboard(QWidget):
 
     def init_mnk_listener(self):
         # Global variables to count key presses, mouse clicks, and track mouse movement
+        self.key_press_count = 0
+        self.key_state = {}
+        
         self.left_click_count = 0
         self.right_click_count = 0
-        self.key_press_count = 0
+
         self.total_mouse_distance_pixels = 0
         self.screen_dpi = self.get_screen_dpi()
         self.last_mouse_pos = None
@@ -61,21 +64,8 @@ class ActivityDashboard(QWidget):
         # Start listening to mouse and keyboard events
         self.mouse_listener = mouse.Listener(on_click=self.on_click, on_move=self.on_move)
         self.mouse_listener.start()
-        self.keyboard_listener = keyboard.Listener(on_press=self.on_press)
+        self.keyboard_listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
         self.keyboard_listener.start()
-
-    def get_screen_dpi(self):
-        dpi = 120  # Default DPI value
-
-        screen = QGuiApplication.primaryScreen()
-        if screen:
-            # Retrieve DPI values
-            dpi = screen.physicalDotsPerInch()
-            print(f"Screen DPI: {dpi}")
-        else:
-            print(f"Unable to get screen DPI. Setting {dpi} as the default value.")
-
-        return dpi
 
     def initUI(self):
         self.layout = QVBoxLayout(self)
@@ -100,6 +90,30 @@ class ActivityDashboard(QWidget):
         self.layout.addWidget(self.activity_plot)
         self.layout.addWidget(self.remaining_time_label)
         self.layout.addWidget(self.log_text_box)
+    
+    def on_press(self, key):
+        # Convert key to string for tracking
+        try:
+            key_char = key.char
+        except AttributeError:
+            key_char = str(key)  # Handle special keys like '<space>'
+
+        # Initialize key state if not already done
+        if key_char not in self.key_state:
+            self.key_state[key_char] = True  # Set to True initially for counting the first press
+
+        # Count the key press only if it was previously lifted
+        if self.key_state[key_char]:
+            self.key_press_count += 1
+            self.key_state[key_char] = False  # Mark the key as pressed
+
+    def on_release(self, key):
+        try:
+            key_char = key.char
+        except AttributeError:
+            key_char = str(key)
+
+        self.key_state[key_char] = True # Mark the key as lifted
 
     def on_click(self, x, y, button, pressed):
         if pressed:
@@ -107,6 +121,19 @@ class ActivityDashboard(QWidget):
                 self.left_click_count += 1
             elif button == mouse.Button.right:
                 self.right_click_count += 1
+    
+    def get_screen_dpi(self):
+        dpi = 120  # Default DPI value
+
+        screen = QGuiApplication.primaryScreen()
+        if screen:
+            # Retrieve DPI values
+            dpi = screen.physicalDotsPerInch()
+            print(f"Screen DPI: {dpi}")
+        else:
+            print(f"Unable to get screen DPI. Setting {dpi} as the default value.")
+
+        return dpi
 
     def on_move(self, x, y):
         if self.last_mouse_pos is not None:
@@ -124,15 +151,9 @@ class ActivityDashboard(QWidget):
         # Update last position
         self.last_mouse_pos = (x, y)
 
-    def on_press(self, key):
-        self.key_press_count += 1
-
-
     def queue_data(self, data, progress_callback):
         progress_callback.emit("Currently OFFLINE. Queuing data for syncing later.")
-
-        # data is returned to the worker to be emitted and queued
-        return data
+        self.signal_emitter.sync_data_created.emit(data)
 
     def post_data(self, data, progress_callback):
         HEADERS = {
@@ -187,14 +208,12 @@ class ActivityDashboard(QWidget):
             worker = Worker(self.queue_data, data)
             
             worker.signals.progress.connect(self.log_text_box.logMessage)
-            worker.signals.result.connect(lambda returned_data: self.signal_emitter.sync_data_created.emit(returned_data))
             worker.signals.finished.connect(worker_finished)
         
-        # Execute
         self.threadpool.start(worker)
     
     def update_recorded_data(self):
-        # record data in widget
+        # Record data in plot widget
         self.key_presses.append(self.key_press_count)
         self.left_clicks.append(self.left_click_count)
         self.right_clicks.append(self.right_click_count)

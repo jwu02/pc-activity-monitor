@@ -1,15 +1,14 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QPushButton
-from PyQt5.QtCore import Qt, pyqtSignal, QThreadPool
+from PyQt5.QtCore import Qt, QThreadPool
 import qtawesome as qta
 
 from dotenv import load_dotenv
-import json
 import os
 import requests
 
 from workers.worker import Worker
 
-load_dotenv()  # This will load variables from the .env file into environment variables
+load_dotenv() # This will load variables from the .env file into environment variables
 API_ENDPOINT = os.getenv('API_ENDPOINT')
 API_BEARER_TOKEN = os.getenv('API_STATIC_TOKEN')
 
@@ -113,7 +112,7 @@ class OnlineStatusWidget(QWidget):
 
     def ping_api_server(self, progress_callback):
         try:
-            response = requests.get(f'http://localhost:8000/ping')
+            response = requests.get(f'{API_ENDPOINT}/ping')
             if response.status_code == 200:
                 return True
             else:

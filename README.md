@@ -13,6 +13,7 @@
     - shorter timeout intervals for testing
 - [] track application time + activity grouping e.g. productivity, entertainment, gaming
 
+- [x] reworked key press count implementation (holding down movements keys while gaming heavily inflates the count)
 - [x] store+sync offline mode data / data that failed to send
 - [x] fix pipenv installation
     - `imp` removed from python3.12 `https://github.com/BradenM/micropy-cli/issues/575`

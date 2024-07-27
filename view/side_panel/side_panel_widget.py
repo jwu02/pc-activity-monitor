@@ -1,9 +1,9 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton
 from PyQt5.QtCore import Qt
 
-from view.timeout_interval_slider_widget import TimeoutIntervalSliderWidget
-from view.online_status_widget import OnlineStatusWidget
-from view.data_sync_widget import DataSyncWindow
+from view.side_panel.timeout_interval_slider_widget import TimeoutIntervalSliderWidget
+from view.side_panel.online_status_widget import OnlineStatusWidget
+from view.side_panel.data_sync_widget import DataSyncWindow
 
 class SidePanelWidget(QWidget):
     def __init__(self, signal_emitter):
@@ -17,7 +17,7 @@ class SidePanelWidget(QWidget):
         self.layout = QVBoxLayout(self)
         self.layout.setAlignment(Qt.AlignTop)
 
-        self.online_status_widget = OnlineStatusWidget(self.signal_emitter.online_status_updated)
+        self.online_status_widget = OnlineStatusWidget(self.signal_emitter)
         self.timeout_interval_slider = TimeoutIntervalSliderWidget(self.signal_emitter.timeout_interval_changed)
 
         self.data_sync_window = DataSyncWindow(self.signal_emitter)

@@ -5,6 +5,7 @@ class SignalEmitter(QObject):
     timeout_interval_changed = pyqtSignal(int)
     sync_data_created = pyqtSignal(object)
     send_sync_data = pyqtSignal(object)
+    log_message = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()

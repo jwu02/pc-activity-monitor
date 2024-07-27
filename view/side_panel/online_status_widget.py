@@ -27,7 +27,7 @@ class OnlineStatusWidget(QWidget):
         }
     }
 
-    def __init__(self, online_status_updated_signal):
+    def __init__(self, signal_emitter):
         super().__init__()
 
         self.is_online = False
@@ -36,8 +36,12 @@ class OnlineStatusWidget(QWidget):
 
         self.threadpool = QThreadPool()
 
-        self.online_status_updated_signal = online_status_updated_signal
+        # Initialise signals
+        self.signal_emitter = signal_emitter
+        self.online_status_updated_signal = self.signal_emitter.online_status_updated
         self.online_status_updated_signal.connect(self.updateUI)
+        self.log_message_signal = self.signal_emitter.log_message
+
         self.toggle_online_status() # go online on initialization
 
     def initUI(self):
@@ -77,9 +81,9 @@ class OnlineStatusWidget(QWidget):
         self.status_label.setStyleSheet(self.status_label_stylesheet)
 
     def toggle_online_status(self):
-        # if status is toggled to online, check server connection
+        # if status is toggled to online, check server connection/status
         if not self.is_online:
-            self.ping_worker()
+            self.ping_server_worker()
         else:
             self.is_online = False
         
@@ -95,30 +99,26 @@ class OnlineStatusWidget(QWidget):
 
         self.update_status_label_stylesheet()
     
-    def ping_worker(self):
+    def ping_server_worker(self):
         self.toggle_status_btn.setEnabled(False)
 
-        # Pass the function to execute
-        worker = Worker(self.ping_api_server) # Any other args, kwargs are passed to the run function
+        worker = Worker(self.ping_api_server)
         worker.signals.result.connect(self.set_online_status)
-        worker.signals.progress.connect(print)
-        worker.signals.finished.connect(self.enable_toggle_btn)
+        worker.signals.progress.connect(self.log_message_signal.emit)
+        worker.signals.finished.connect(lambda: self.toggle_status_btn.setEnabled(True))
 
-        # Execute
         self.threadpool.start(worker)
-
-    def enable_toggle_btn(self):
-        self.toggle_status_btn.setEnabled(True)
 
     def ping_api_server(self, progress_callback):
         try:
             response = requests.get(f'{API_ENDPOINT}/ping')
+            progress_callback.emit(f"Server responded with: {response}")
             if response.status_code == 200:
                 return True
             else:
                 return False
         except requests.RequestException as e:
-            print(f"Error pinging server: {e}")
+            progress_callback.emit(f"Error pinging server: {e}")
             return False
     
     def set_online_status(self, is_online):

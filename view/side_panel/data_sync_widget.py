@@ -76,8 +76,14 @@ class DataSyncWindow(QWidget):
             
                 self.offline_data_table.setItem(row, col, cell)
 
-            timestamp_formatted = datetime.fromisoformat(timestamp).strftime('%Y-%m-%d %H:%M:%S')
-            self.offline_data_table.setItem(row, 4, QTableWidgetItem(timestamp))
+            # Parse the ISO 8601 string into a datetime object with timezone info
+            utc_dt = datetime.fromisoformat(timestamp)
+            local_dt = utc_dt.astimezone() # Convert from UTC to local time
+
+            # Format the datetime object as needed
+            formatted_local_time = local_dt.strftime('%Y-%m-%d %H:%M:%S')
+
+            self.offline_data_table.setItem(row, 4, QTableWidgetItem(formatted_local_time))
 
         self.offline_data_table.scrollToBottom()
 
@@ -91,7 +97,6 @@ class DataSyncWindow(QWidget):
         
         self.update_ui()
 
-    
     def clear_all_offline_data(self):
         self.sync_data_queue = queue.Queue()
         self.offline_data_table.setRowCount(0)

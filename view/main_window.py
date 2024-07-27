@@ -3,8 +3,8 @@ from PyQt5.QtCore import QCoreApplication
 
 import qtawesome as qta
 
-from view.activity_dashboard import ActivityDashboard
-from view.side_panel_widget import SidePanelWidget
+from view.activity_dashboard.activity_dashboard import ActivityDashboard
+from view.side_panel.side_panel_widget import SidePanelWidget
 from view.signal_emitter import SignalEmitter
 
 class MainWindow(QMainWindow):

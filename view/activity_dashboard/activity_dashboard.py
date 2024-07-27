@@ -11,9 +11,9 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PyQt5.QtCore import QThreadPool, QTimer
 from PyQt5.QtGui import QGuiApplication
 
-from view.logger_widget import LoggerWidget
-from view.activity_plot_widget import ActivityPlotWidget
-from view.activity_summary import ActivitySummary
+from view.activity_dashboard.logger_widget import LoggerWidget
+from view.activity_dashboard.activity_plot_widget import ActivityPlotWidget
+from view.activity_dashboard.activity_summary import ActivitySummary
 
 from workers.worker import Worker
 
@@ -36,6 +36,8 @@ class ActivityDashboard(QWidget):
 
         self.signal_emitter.send_sync_data.connect(self.send_data_worker)
 
+        self.log_message_signal = self.signal_emitter.log_message
+
         self.key_presses = []
         self.left_clicks = []
         self.right_clicks = []
@@ -46,7 +48,6 @@ class ActivityDashboard(QWidget):
         self.initUI()
 
         self.threadpool = QThreadPool()
-        # print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
 
     def init_mnk_listener(self):
         # Global variables to count key presses, mouse clicks, and track mouse movement
@@ -84,7 +85,7 @@ class ActivityDashboard(QWidget):
         self.activity_plot = ActivityPlotWidget()
         self.remaining_time_prefix = "Remaining time until next POST request: "
         self.remaining_time_label = QLabel(self.get_remaining_time_label_text())
-        self.log_text_box = LoggerWidget()
+        self.log_text_box = LoggerWidget(self.signal_emitter)
 
         self.layout.addWidget(self.activity_summary)
         self.layout.addWidget(self.activity_plot)
@@ -150,30 +151,11 @@ class ActivityDashboard(QWidget):
         
         # Update last position
         self.last_mouse_pos = (x, y)
-
-    def queue_data(self, data, progress_callback):
-        progress_callback.emit("Currently OFFLINE. Queuing data for syncing later.")
-        self.signal_emitter.sync_data_created.emit(data)
-
-    def post_data(self, data, progress_callback):
-        HEADERS = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {API_BEARER_TOKEN}'
-        }
-        
-        try:
-            progress_callback.emit("Starting data send cycle...")
-
-            for key, val in data.items():
-                POST_REQUEST_ENDPOINT = f'{API_ENDPOINT}/{key}'
-                progress_callback.emit(f"POST {POST_REQUEST_ENDPOINT}")
-                requests.post(POST_REQUEST_ENDPOINT, data=json.dumps(data[key]), headers=HEADERS)
-
-            progress_callback.emit("Data sent successfully.")
-        except requests.exceptions.RequestException as e:
-            print(f"Error sending data: {e}")
     
     def process_data(self):
+        """
+        The entry point for when the interval timer is up
+        """
         if not (self.key_press_count==0 and self.left_click_count==0 and 
                 self.right_click_count==0 and self.total_mouse_distance_pixels==0):
 
@@ -189,7 +171,7 @@ class ActivityDashboard(QWidget):
             self.send_data_worker(data)
             
         else:
-            self.log_text_box.logMessage("No activity recorded.")
+            self.log_message_signal.emit("No activity recorded.")
             self.update_recorded_data()
     
     def send_data_worker(self, data):
@@ -197,20 +179,44 @@ class ActivityDashboard(QWidget):
             self.update_recorded_data()
             self.reset_count()
 
+        # Check if online first to determine to send or
+        # Queue the data for syncing later
         if self.is_online:
             # Pass the function to execute
             # Any other args, kwargs are passed to the run function
             worker = Worker(self.post_data, data)
             
-            worker.signals.progress.connect(self.log_text_box.logMessage)
+            worker.signals.progress.connect(self.log_message_signal.emit)
             worker.signals.finished.connect(worker_finished)
         else:
             worker = Worker(self.queue_data, data)
             
-            worker.signals.progress.connect(self.log_text_box.logMessage)
+            worker.signals.progress.connect(self.log_message_signal.emit)
             worker.signals.finished.connect(worker_finished)
         
         self.threadpool.start(worker)
+    
+    def queue_data(self, data, progress_callback):
+        progress_callback.emit("Currently OFFLINE. Queuing data for syncing later.")
+        self.signal_emitter.sync_data_created.emit(data)
+
+    def post_data(self, data, progress_callback):
+        HEADERS = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {API_BEARER_TOKEN}'
+        }
+        
+        try:
+            progress_callback.emit("Starting data send cycle...")
+
+            for activity_type, activity_data in data.items():
+                POST_REQUEST_ENDPOINT = f'{API_ENDPOINT}/activity/{activity_type}'
+                progress_callback.emit(f"POST {POST_REQUEST_ENDPOINT}")
+                requests.post(POST_REQUEST_ENDPOINT, data=json.dumps(activity_data), headers=HEADERS)
+
+            progress_callback.emit("Data sent successfully.")
+        except requests.exceptions.RequestException as e:
+            print(f"Error sending data: {e}")
     
     def update_recorded_data(self):
         # Record data in plot widget
@@ -220,7 +226,7 @@ class ActivityDashboard(QWidget):
         self.mouse_movements.append(self.total_mouse_distance_meters)
         self.timestamps.append(time.time())
 
-        # update plot widget with new date
+        # Update plot widget with new date
         updated_data = {
             'activities': {
                 'key-presses': self.key_presses,
@@ -241,8 +247,8 @@ class ActivityDashboard(QWidget):
         self.total_mouse_distance_pixels = 0
         self.total_mouse_distance_meters = 0
     
-    def update_timeout_interval(self, value: int):
-        self.timeout_interval = value*60000
+    def update_timeout_interval(self, multiplier: int):
+        self.timeout_interval = multiplier*60000
         self.send_data_timer.setInterval(self.timeout_interval)
 
     def update_remaining_time_label(self):
@@ -251,15 +257,16 @@ class ActivityDashboard(QWidget):
     def get_remaining_time_label_text(self) -> str:
         remaining_time = self.send_data_timer.remainingTime()
 
-        remaining_time_formatted = self.milliseconds_to_mmss(remaining_time)
+        remaining_time_formatted = milliseconds_to_mmss_format(remaining_time)
     
         return f"Time remaining until next POST request: {remaining_time_formatted}"
 
-    def milliseconds_to_mmss(self, milliseconds: int):
-        seconds = (milliseconds // 1000) % 60
-        minutes = (milliseconds // (1000 * 60)) % 60
-        return f"{int(minutes):02}:{int(seconds):02}"
+    def update_online_status(self, is_online: bool):
+        self.is_online = is_online
+        self.log_message_signal.emit(f"You are now {'ONLINE' if self.is_online else 'OFFLINE'}.")
 
-    def update_online_status(self, isOnline: bool):
-        self.is_online = isOnline
-        self.log_text_box.logMessage(f"You are now {'ONLINE' if self.is_online else 'OFFLINE'}.")
+
+def milliseconds_to_mmss_format(milliseconds: int):
+    seconds = (milliseconds // 1000) % 60
+    minutes = (milliseconds // (1000 * 60)) % 60
+    return f"{int(minutes):02}:{int(seconds):02}"

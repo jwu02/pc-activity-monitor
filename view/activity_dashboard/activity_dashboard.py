@@ -7,9 +7,9 @@ from pynput import mouse, keyboard
 import requests
 import time
 
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
-from PyQt5.QtCore import QThreadPool, QTimer
-from PyQt5.QtGui import QGuiApplication
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
+from PyQt6.QtCore import QThreadPool, QTimer
+from PyQt6.QtGui import QGuiApplication
 
 from view.activity_dashboard.logger_widget import LoggerWidget
 from view.activity_dashboard.activity_plot_widget import ActivityPlotWidget

@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtGui import QFontDatabase, QFont
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtGui import QFontDatabase, QFont
 
 from view.main_window import MainWindow
 

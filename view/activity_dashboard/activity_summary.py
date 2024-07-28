@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel
-from PyQt5.QtCore import Qt
+from PyQt6.QtWidgets import QWidget, QGridLayout, QLabel
+from PyQt6.QtCore import Qt
 
 import time
 from datetime import datetime

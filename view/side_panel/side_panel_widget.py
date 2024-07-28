@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton
-from PyQt5.QtCore import Qt
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton
+from PyQt6.QtCore import Qt
 
 from view.side_panel.timeout_interval_slider_widget import TimeoutIntervalSliderWidget
 from view.side_panel.online_status_widget import OnlineStatusWidget

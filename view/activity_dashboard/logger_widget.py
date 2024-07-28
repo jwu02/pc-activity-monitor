@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTextEdit
-from PyQt5.QtGui import QTextCursor
-from PyQt5.QtCore import Qt
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QTextEdit
+from PyQt6.QtGui import QTextCursor
+from PyQt6.QtCore import Qt
 
 class LoggerWidget(QWidget):
     def __init__(self, signal_emitter):

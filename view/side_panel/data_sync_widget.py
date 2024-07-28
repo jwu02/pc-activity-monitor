@@ -1,8 +1,8 @@
 from datetime import datetime
 import queue
 
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTableWidget, QTableWidgetItem
-from PyQt5.QtCore import Qt
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTableWidget, QTableWidgetItem
+from PyQt6.QtCore import Qt
 
 import qtawesome as qta
 

@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QSlider
-from PyQt5.QtCore import Qt
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QSlider
+from PyQt6.QtCore import Qt
 
 class TimeoutIntervalSliderWidget(QWidget):
     def __init__(self, timeout_interval_changed_signal):

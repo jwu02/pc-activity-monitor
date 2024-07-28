@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QPushButton
-from PyQt5.QtCore import Qt, QThreadPool
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QPushButton
+from PyQt6.QtCore import Qt, QThreadPool
 import qtawesome as qta
 
 from dotenv import load_dotenv

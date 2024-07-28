@@ -1,5 +1,6 @@
-from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QSystemTrayIcon, QMenu, QAction
-from PyQt5.QtCore import QCoreApplication
+from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QSystemTrayIcon, QMenu
+from PyQt6.QtCore import QCoreApplication
+from PyQt6.QtGui import QAction
 
 import qtawesome as qta
 

@@ -1,5 +1,5 @@
 from pyqtgraph import PlotWidget, DateAxisItem
-from PyQt5.QtWidgets import QWidget, QVBoxLayout
+from PyQt6.QtWidgets import QWidget, QVBoxLayout
 
 import time
 
